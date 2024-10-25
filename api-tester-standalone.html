@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News API Tester</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        .button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-right: 0.5rem;
+        }
+        .button:hover {
+            background: #45a049;
+        }
+        .button.clear {
+            background: #666;
+        }
+        .button.clear:hover {
+            background: #555;
+        }
+        .status {
+            margin-left: 1rem;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        .news-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        .news-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+        .news-section h2 {
+            margin-top: 0;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #4CAF50;
+        }
+        .article {
+            padding: 1rem 0;
+            border-bottom: 1px solid #eee;
+        }
+        .article:last-child {
+            border-bottom: none;
+        }
+        .article h3 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1.1rem;
+        }
+        .article p {
+            margin: 0.5rem 0;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        .source {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 0.5rem;
+        }
+        .error {
+            color: #d32f2f;
+            padding: 1rem;
+            background: #ffebee;
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+        .controls {
+            display: flex;
+            align-items: center;
+        }
+        .url-input {
+            padding: 0.5rem;
+            margin-right: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 300px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>News API Tester</h1>
+            <div class="controls">
+                <input type="text" id="apiUrl" class="url-input" value="http://localhost:5000" />
+                <button onclick="fetchNews()" class="button">Fetch News</button>
+                <button onclick="clearResults()" class="button clear">Clear</button>
+                <span id="status" class="status"></span>
+            </div>
+        </div>
+
+        <div id="error" style="display: none;" class="error"></div>
+
+        <div class="news-grid">
+            <div class="news-section">
+                <h2>Trending News</h2>
+                <div id="trending"></div>
+            </div>
+
+            <div class="news-section">
+                <h2>Local News</h2>
+                <div id="local"></div>
+            </div>
+
+            <div class="news-section">
+                <h2>Finance News</h2>
+                <div id="finance"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function fetchNews() {
+            const status = document.getElementById('status');
+            const error = document.getElementById('error');
+            const apiUrl = document.getElementById('apiUrl').value;
+            
+            status.textContent = 'Fetching...';
+            error.style.display = 'none';
+            
+            try {
+                const response = await fetch(`${apiUrl}/api/news/all`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                displayNews('trending', data.trending);
+                displayNews('local', data.local);
+                displayNews('finance', data.finance);
+                
+                status.textContent = 'Fetch completed successfully';
+                setTimeout(() => {
+                    status.textContent = '';
+                }, 3000);
+            } catch (err) {
+                console.error('Error:', err);
+                error.textContent = `Error: ${err.message}`;
+                error.style.display = 'block';
+                status.textContent = '';
+            }
+        }
+
+        function displayNews(category, news) {
+            const container = document.getElementById(category);
+            container.innerHTML = '';
+
+            if (!news || news.length === 0) {
+                container.innerHTML = '<div class="article"><p>No news available</p></div>';
+                return;
+            }
+
+            news.forEach(article => {
+                const articleElement = document.createElement('div');
+                articleElement.className = 'article';
+                articleElement.innerHTML = `
+                    <h3>${article.title}</h3>
+                    ${article.body ? `<p>${article.body}</p>` : ''}
+                    ${article.source?.name ? `<div class="source">Source: ${article.source.name}</div>` : ''}
+                `;
+                container.appendChild(articleElement);
+            });
+        }
+
+        function clearResults() {
+            ['trending', 'local', 'finance'].forEach(category => {
+                document.getElementById(category).innerHTML = '';
+            });
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('status').textContent = '';
+        }
+    </script>
+</body>
+</html>

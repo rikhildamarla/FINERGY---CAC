@@ -10,6 +10,7 @@ import {
   TextInput,
   Alert
 } from 'react-native';
+import { CommonActions } from '@react-navigation/native';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { BlurView } from 'expo-blur';
@@ -273,35 +274,30 @@ const questions = [
     
           await setDoc(userDocRef, userData, { merge: true });
           
-          //navigate to Home
+          // Reset navigation stack and go to Home
           navigation.dispatch(
             CommonActions.reset({
               index: 0,
-              routes: [
-                {
-                  name: 'MainApp',
-                  params: {
-                    screen: 'Home',
-                    params: {
-                      score: score,
-                      zipCode: zipCode
-                    }
-                  }
-                },
-              ],
+              routes: [{ name: 'Home' }],
             })
           );
     
-        } catch (error) {
-          console.error('Submission error details:', error);
+        } catch (err) {
+          console.error('Submission error details:', err);
           
           let errorMessage = 'Failed to save evaluation results. ';
           
-          if (error.code === 'permission-denied') {
+          if (err.code === 'permission-denied') {
             errorMessage += 'You do not have permission to save data. Please log out and log in again.';
-          } else if (error.code === 'unavailable') {
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+              })
+            );
+          } else if (err.code === 'unavailable') {
             errorMessage += 'Server is temporarily unavailable. Please try again later.';
-          } else if (error.code === 'unauthenticated') {
+          } else if (err.code === 'unauthenticated') {
             errorMessage += 'Your session has expired. Please log in again.';
             navigation.dispatch(
               CommonActions.reset({
@@ -316,26 +312,13 @@ const questions = [
           Alert.alert(
             'Error',
             errorMessage,
-            [
-              {
-                text: 'OK',
-                onPress: () => {
-                  if (error.code === 'unauthenticated') {
-                    navigation.dispatch(
-                      CommonActions.reset({
-                        index: 0,
-                        routes: [{ name: 'Login' }],
-                      })
-                    );
-                  }
-                }
-              }
-            ]
+            [{ text: 'OK' }]
           );
         } finally {
           setIsSubmitting(false);
         }
       };
+    
       
     const startIntroAnimation = () => {
       Animated.sequence([
